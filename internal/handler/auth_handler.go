@@ -8,6 +8,7 @@ import (
 	"github.com/antonidev/dompet-santuy/internal/domain"
 	"github.com/antonidev/dompet-santuy/internal/middleware"
 	"github.com/antonidev/dompet-santuy/internal/repository"
+	"github.com/antonidev/dompet-santuy/internal/response"
 	"github.com/antonidev/dompet-santuy/internal/service"
 	"github.com/labstack/echo/v4"
 )
@@ -40,10 +41,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "registration failed")
 	}
 
-	return c.JSON(http.StatusCreated, map[string]interface{}{
-		"message": "registration successful",
-		"user":    user,
-	})
+	return response.Created(c, "registration successful", user)
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
@@ -65,7 +63,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "login failed")
 	}
 
-	return c.JSON(http.StatusOK, tokens)
+	return response.OK(c, "login successful", tokens)
 }
 
 func (h *AuthHandler) Refresh(c echo.Context) error {
@@ -85,7 +83,7 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "token refresh failed")
 	}
 
-	return c.JSON(http.StatusOK, tokens)
+	return response.OK(c, "token refreshed", tokens)
 }
 
 func (h *AuthHandler) Logout(c echo.Context) error {
@@ -98,14 +96,14 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 	}
 
 	_ = h.authService.Logout(c.Request().Context(), req.RefreshToken)
-	return c.JSON(http.StatusOK, map[string]string{"message": "logged out successfully"})
+	return response.NoContent(c, "logged out successfully")
 }
 
 func (h *AuthHandler) LogoutAll(c echo.Context) error {
 	userID := c.Get(middleware.UserIDKey).(string)
 
 	_ = h.authService.LogoutAll(c.Request().Context(), userID)
-	return c.JSON(http.StatusOK, map[string]string{"message": "all sessions terminated"})
+	return response.NoContent(c, "all sessions terminated")
 }
 
 func (h *AuthHandler) Me(c echo.Context) error {
@@ -119,5 +117,5 @@ func (h *AuthHandler) Me(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get profile")
 	}
 
-	return c.JSON(http.StatusOK, user)
+	return response.OK(c, "profile retrieved", user)
 }
