@@ -1,0 +1,22 @@
+# Environment
+.env
+
+# Binary
+/dompet-santuy
+/cmd/dompet-santuy
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
