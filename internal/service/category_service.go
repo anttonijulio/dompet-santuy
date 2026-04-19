@@ -31,6 +31,15 @@ func (s *CategoryService) Create(ctx context.Context, userID string, req *domain
 	return &resp, nil
 }
 
+func (s *CategoryService) GetByID(ctx context.Context, userID, categoryID string) (*domain.CategoryResponse, error) {
+	cat, err := s.categoryRepo.FindByIDAndUserID(ctx, categoryID, userID)
+	if err != nil {
+		return nil, err
+	}
+	resp := cat.ToResponse()
+	return &resp, nil
+}
+
 func (s *CategoryService) Update(ctx context.Context, userID, categoryID string, req *domain.UpdateCategoryRequest) (*domain.CategoryResponse, error) {
 	cat, err := s.categoryRepo.FindByIDAndUserID(ctx, categoryID, userID)
 	if err != nil {

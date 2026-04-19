@@ -44,6 +44,21 @@ func (h *TransactionHandler) Create(c echo.Context) error {
 	return response.Created(c, "transaction created", tx)
 }
 
+func (h *TransactionHandler) Get(c echo.Context) error {
+	transactionID := c.Param("id")
+	userID := c.Get(middleware.UserIDKey).(string)
+
+	tx, err := h.transactionSvc.GetByID(c.Request().Context(), userID, transactionID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return response.NotFound(c, "transaction not found")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "failed to get transaction")
+	}
+
+	return response.OK(c, "transaction retrieved", tx)
+}
+
 func (h *TransactionHandler) Update(c echo.Context) error {
 	transactionID := c.Param("id")
 	var req domain.UpdateTransactionRequest

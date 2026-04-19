@@ -49,6 +49,21 @@ func (h *CategoryHandler) List(c echo.Context) error {
 	return response.List(c, "categories retrieved", cats)
 }
 
+func (h *CategoryHandler) Get(c echo.Context) error {
+	categoryID := c.Param("id")
+	userID := c.Get(middleware.UserIDKey).(string)
+
+	cat, err := h.categorySvc.GetByID(c.Request().Context(), userID, categoryID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return response.NotFound(c, "category not found")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "failed to get category")
+	}
+
+	return response.OK(c, "category retrieved", cat)
+}
+
 func (h *CategoryHandler) Update(c echo.Context) error {
 	categoryID := c.Param("id")
 	var req domain.UpdateCategoryRequest

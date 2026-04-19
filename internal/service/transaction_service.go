@@ -62,6 +62,15 @@ func (s *TransactionService) Create(ctx context.Context, userID string, req *dom
 	return &resp, nil
 }
 
+func (s *TransactionService) GetByID(ctx context.Context, userID, transactionID string) (*domain.TransactionResponse, error) {
+	tx, err := s.transactionRepo.FindByIDAndUserID(ctx, transactionID, userID)
+	if err != nil {
+		return nil, err
+	}
+	resp := tx.ToResponse()
+	return &resp, nil
+}
+
 func (s *TransactionService) Update(ctx context.Context, userID, transactionID string, req *domain.UpdateTransactionRequest) (*domain.TransactionResponse, error) {
 	tx, err := s.transactionRepo.FindByIDAndUserID(ctx, transactionID, userID)
 	if err != nil {

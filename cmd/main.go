@@ -137,10 +137,12 @@ func main() {
 
 	protected.GET("/categories", categoryHandler.List)
 	protected.POST("/categories", categoryHandler.Create)
+	protected.GET("/categories/:id", categoryHandler.Get)
 	protected.PUT("/categories/:id", categoryHandler.Update)
 	protected.DELETE("/categories/:id", categoryHandler.Delete)
 	protected.GET("/transactions", transactionHandler.List)
 	protected.POST("/transactions", transactionHandler.Create)
+	protected.GET("/transactions/:id", transactionHandler.Get)
 	protected.PUT("/transactions/:id", transactionHandler.Update)
 	protected.DELETE("/transactions/:id", transactionHandler.Delete)
 
