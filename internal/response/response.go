@@ -21,6 +21,14 @@ type Response[T any] struct {
 	Meta    *Meta    `json:"meta,omitempty"`
 }
 
+type ListResponse[T any] struct {
+	Success bool     `json:"success"`
+	Message string   `json:"message"`
+	Data    []T      `json:"data"`
+	Errors  []string `json:"errors,omitempty"`
+	Meta    *Meta    `json:"meta,omitempty"`
+}
+
 func OK[T any](c echo.Context, message string, data T) error {
 	return c.JSON(http.StatusOK, Response[T]{
 		Success: true,
@@ -37,8 +45,22 @@ func Created[T any](c echo.Context, message string, data T) error {
 	})
 }
 
+func List[T any](c echo.Context, message string, data []T) error {
+	if data == nil {
+		data = []T{}
+	}
+	return c.JSON(http.StatusOK, ListResponse[T]{
+		Success: true,
+		Message: message,
+		Data:    data,
+	})
+}
+
 func Paginated[T any](c echo.Context, message string, data []T, meta Meta) error {
-	return c.JSON(http.StatusOK, Response[[]T]{
+	if data == nil {
+		data = []T{}
+	}
+	return c.JSON(http.StatusOK, ListResponse[T]{
 		Success: true,
 		Message: message,
 		Data:    data,

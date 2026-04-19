@@ -43,5 +43,5 @@ func (h *CategoryHandler) List(c echo.Context) error {
 		return response.InternalServerError(c, "failed to list categories")
 	}
 
-	return response.OK(c, "categories retrieved", cats)
+	return response.List(c, "categories retrieved", cats)
 }
