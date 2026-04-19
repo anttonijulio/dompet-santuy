@@ -142,6 +142,7 @@ func main() {
 	protected.DELETE("/categories/:id", categoryHandler.Delete)
 	protected.GET("/transactions", transactionHandler.List)
 	protected.POST("/transactions", transactionHandler.Create)
+	protected.GET("/transactions/summary", transactionHandler.Summary)
 	protected.GET("/transactions/:id", transactionHandler.Get)
 	protected.PUT("/transactions/:id", transactionHandler.Update)
 	protected.DELETE("/transactions/:id", transactionHandler.Delete)

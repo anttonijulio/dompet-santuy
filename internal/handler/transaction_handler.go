@@ -44,6 +44,21 @@ func (h *TransactionHandler) Create(c echo.Context) error {
 	return response.Created(c, "transaction created", tx)
 }
 
+func (h *TransactionHandler) Summary(c echo.Context) error {
+	userID := c.Get(middleware.UserIDKey).(string)
+	filter := domain.SummaryFilter{
+		StartDate: c.QueryParam("start_date"),
+		EndDate:   c.QueryParam("end_date"),
+	}
+
+	summary, err := h.transactionSvc.GetSummary(c.Request().Context(), userID, filter)
+	if err != nil {
+		return response.InternalServerError(c, "failed to get transaction summary")
+	}
+
+	return response.OK(c, "transaction summary retrieved", summary)
+}
+
 func (h *TransactionHandler) Get(c echo.Context) error {
 	transactionID := c.Param("id")
 	userID := c.Get(middleware.UserIDKey).(string)

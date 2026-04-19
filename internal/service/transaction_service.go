@@ -115,6 +115,14 @@ func (s *TransactionService) Delete(ctx context.Context, userID, transactionID s
 	return s.transactionRepo.Delete(ctx, transactionID, userID)
 }
 
+func (s *TransactionService) GetSummary(ctx context.Context, userID string, f domain.SummaryFilter) (*domain.TransactionSummary, error) {
+	summary, err := s.transactionRepo.GetSummary(ctx, userID, f)
+	if err != nil {
+		return nil, fmt.Errorf("get summary: %w", err)
+	}
+	return summary, nil
+}
+
 func (s *TransactionService) List(ctx context.Context, userID string, f domain.ListTransactionsFilter) ([]domain.TransactionResponse, int, error) {
 	txs, total, err := s.transactionRepo.FindByUserID(ctx, userID, f)
 	if err != nil {

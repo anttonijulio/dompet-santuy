@@ -62,6 +62,33 @@ type ListTransactionsFilter struct {
 	Offset    int
 }
 
+type SummaryFilter struct {
+	StartDate string
+	EndDate   string
+}
+
+type CategorySummary struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Icon  string `json:"icon,omitempty"`
+	Color string `json:"color,omitempty"`
+	Count int    `json:"count"`
+	Total int64  `json:"total"`
+}
+
+type TransactionSummary struct {
+	Balance              int64             `json:"balance"`
+	TotalIncome          int64             `json:"total_income"`
+	TotalExpense         int64             `json:"total_expense"`
+	TotalCount           int               `json:"total_count"`
+	IncomeCount          int               `json:"income_count"`
+	ExpenseCount         int               `json:"expense_count"`
+	AvgIncome            int64             `json:"avg_income"`
+	AvgExpense           int64             `json:"avg_expense"`
+	TopIncomeCategories  []CategorySummary `json:"top_income_categories"`
+	TopExpenseCategories []CategorySummary `json:"top_expense_categories"`
+}
+
 type CategoryResponse struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`

@@ -143,6 +143,91 @@ func (r *TransactionRepository) Delete(ctx context.Context, id, userID string) e
 	return nil
 }
 
+func (r *TransactionRepository) GetSummary(ctx context.Context, userID string, f domain.SummaryFilter) (*domain.TransactionSummary, error) {
+	where := `user_id = ?`
+	args := []any{userID}
+	if f.StartDate != "" {
+		where += ` AND date >= ?`
+		args = append(args, f.StartDate)
+	}
+	if f.EndDate != "" {
+		where += ` AND date <= ?`
+		args = append(args, f.EndDate)
+	}
+
+	var s domain.TransactionSummary
+	err := r.db.QueryRowContext(ctx, `
+		SELECT
+			COUNT(*),
+			COALESCE(SUM(CASE WHEN type='income'  THEN amount ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0),
+			COUNT(CASE WHEN type='income'  THEN 1 END),
+			COUNT(CASE WHEN type='expense' THEN 1 END),
+			COALESCE(CAST(AVG(CASE WHEN type='income'  THEN amount END) AS SIGNED), 0),
+			COALESCE(CAST(AVG(CASE WHEN type='expense' THEN amount END) AS SIGNED), 0)
+		FROM transactions WHERE `+where, args...).Scan(
+		&s.TotalCount, &s.TotalIncome, &s.TotalExpense,
+		&s.IncomeCount, &s.ExpenseCount,
+		&s.AvgIncome, &s.AvgExpense,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("summary aggregates: %w", err)
+	}
+	s.Balance = s.TotalIncome - s.TotalExpense
+
+	for _, txType := range []string{"income", "expense"} {
+		cats, err := r.topCategories(ctx, userID, txType, f)
+		if err != nil {
+			return nil, err
+		}
+		if txType == "income" {
+			s.TopIncomeCategories = cats
+		} else {
+			s.TopExpenseCategories = cats
+		}
+	}
+	return &s, nil
+}
+
+func (r *TransactionRepository) topCategories(ctx context.Context, userID, txType string, f domain.SummaryFilter) ([]domain.CategorySummary, error) {
+	where := `t.user_id = ? AND t.type = ?`
+	args := []any{userID, txType}
+	if f.StartDate != "" {
+		where += ` AND t.date >= ?`
+		args = append(args, f.StartDate)
+	}
+	if f.EndDate != "" {
+		where += ` AND t.date <= ?`
+		args = append(args, f.EndDate)
+	}
+
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT c.id, c.name, COALESCE(c.icon,''), COALESCE(c.color,''), COUNT(*), SUM(t.amount)
+		FROM transactions t
+		JOIN categories c ON t.category_id = c.id
+		WHERE `+where+`
+		GROUP BY c.id, c.name, c.icon, c.color
+		ORDER BY SUM(t.amount) DESC
+		LIMIT 5`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("top categories: %w", err)
+	}
+	defer rows.Close()
+
+	var cats []domain.CategorySummary
+	for rows.Next() {
+		var cs domain.CategorySummary
+		if err := rows.Scan(&cs.ID, &cs.Name, &cs.Icon, &cs.Color, &cs.Count, &cs.Total); err != nil {
+			return nil, fmt.Errorf("scan category summary: %w", err)
+		}
+		cats = append(cats, cs)
+	}
+	if cats == nil {
+		cats = []domain.CategorySummary{}
+	}
+	return cats, rows.Err()
+}
+
 func nullableString(s string) interface{} {
 	if s == "" {
 		return nil
