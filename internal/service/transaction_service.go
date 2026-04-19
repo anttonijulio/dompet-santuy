@@ -62,6 +62,50 @@ func (s *TransactionService) Create(ctx context.Context, userID string, req *dom
 	return &resp, nil
 }
 
+func (s *TransactionService) Update(ctx context.Context, userID, transactionID string, req *domain.UpdateTransactionRequest) (*domain.TransactionResponse, error) {
+	tx, err := s.transactionRepo.FindByIDAndUserID(ctx, transactionID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	cat, err := s.categoryRepo.FindByIDAndUserID(ctx, req.CategoryID, userID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return nil, ErrCategoryNotOwned
+	}
+	if err != nil {
+		return nil, fmt.Errorf("find category: %w", err)
+	}
+	if cat.Type != req.Type {
+		return nil, ErrCategoryTypeMismatch
+	}
+
+	date, err := parseDate(req.Date)
+	if err != nil {
+		return nil, fmt.Errorf("invalid date format: %w", err)
+	}
+
+	tx.CategoryID = req.CategoryID
+	tx.Amount = req.Amount
+	tx.Type = req.Type
+	tx.Note = req.Note
+	tx.Date = date
+	tx.Category = cat
+
+	if err := s.transactionRepo.Update(ctx, tx); err != nil {
+		return nil, fmt.Errorf("update transaction: %w", err)
+	}
+
+	resp := tx.ToResponse()
+	return &resp, nil
+}
+
+func (s *TransactionService) Delete(ctx context.Context, userID, transactionID string) error {
+	if _, err := s.transactionRepo.FindByIDAndUserID(ctx, transactionID, userID); err != nil {
+		return err
+	}
+	return s.transactionRepo.Delete(ctx, transactionID, userID)
+}
+
 func (s *TransactionService) List(ctx context.Context, userID string, f domain.ListTransactionsFilter) ([]domain.TransactionResponse, int, error) {
 	txs, total, err := s.transactionRepo.FindByUserID(ctx, userID, f)
 	if err != nil {

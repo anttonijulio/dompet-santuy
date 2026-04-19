@@ -6,6 +6,7 @@ import (
 
 	"github.com/antonidev/dompet-santuy/internal/domain"
 	"github.com/antonidev/dompet-santuy/internal/middleware"
+	"github.com/antonidev/dompet-santuy/internal/repository"
 	"github.com/antonidev/dompet-santuy/internal/response"
 	"github.com/antonidev/dompet-santuy/internal/service"
 	"github.com/labstack/echo/v4"
@@ -41,6 +42,49 @@ func (h *TransactionHandler) Create(c echo.Context) error {
 	}
 
 	return response.Created(c, "transaction created", tx)
+}
+
+func (h *TransactionHandler) Update(c echo.Context) error {
+	transactionID := c.Param("id")
+	var req domain.UpdateTransactionRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "invalid request body")
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	userID := c.Get(middleware.UserIDKey).(string)
+	tx, err := h.transactionSvc.Update(c.Request().Context(), userID, transactionID, &req)
+	if errors.Is(err, repository.ErrNotFound) {
+		return response.NotFound(c, "transaction not found")
+	}
+	if errors.Is(err, service.ErrCategoryNotOwned) {
+		return response.UnprocessableEntity(c, "category not found or does not belong to user")
+	}
+	if errors.Is(err, service.ErrCategoryTypeMismatch) {
+		return response.UnprocessableEntity(c, "category type does not match transaction type")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "failed to update transaction")
+	}
+
+	return response.OK(c, "transaction updated", tx)
+}
+
+func (h *TransactionHandler) Delete(c echo.Context) error {
+	transactionID := c.Param("id")
+	userID := c.Get(middleware.UserIDKey).(string)
+
+	err := h.transactionSvc.Delete(c.Request().Context(), userID, transactionID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return response.NotFound(c, "transaction not found")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "failed to delete transaction")
+	}
+
+	return response.NoContent(c, "transaction deleted")
 }
 
 func (h *TransactionHandler) List(c echo.Context) error {

@@ -5,10 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/antonidev/dompet-santuy/internal/domain"
 	"github.com/google/uuid"
 )
+
+var ErrCategoryInUse = errors.New("category has linked transactions")
 
 type CategoryRepository struct {
 	db *sql.DB
@@ -70,4 +73,42 @@ func (r *CategoryRepository) FindByIDAndUserID(ctx context.Context, id, userID s
 		return nil, fmt.Errorf("find category: %w", err)
 	}
 	return &c, nil
+}
+
+func (r *CategoryRepository) Update(ctx context.Context, cat *domain.Category) error {
+	query := `UPDATE categories SET name = ?, icon = ?, color = ?, type = ? WHERE id = ? AND user_id = ?`
+	res, err := r.db.ExecContext(ctx, query, cat.Name, cat.Icon, cat.Color, cat.Type, cat.ID, cat.UserID)
+	if err != nil {
+		return fmt.Errorf("update category: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("update category rows affected: %w", err)
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func (r *CategoryRepository) Delete(ctx context.Context, id, userID string) error {
+	res, err := r.db.ExecContext(ctx, `DELETE FROM categories WHERE id = ? AND user_id = ?`, id, userID)
+	if err != nil {
+		if isFKViolation(err) {
+			return ErrCategoryInUse
+		}
+		return fmt.Errorf("delete category: %w", err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("delete category rows affected: %w", err)
+	}
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func isFKViolation(err error) bool {
+	return err != nil && (strings.Contains(err.Error(), "1451") || strings.Contains(err.Error(), "foreign key constraint"))
 }

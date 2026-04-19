@@ -31,6 +31,29 @@ func (s *CategoryService) Create(ctx context.Context, userID string, req *domain
 	return &resp, nil
 }
 
+func (s *CategoryService) Update(ctx context.Context, userID, categoryID string, req *domain.UpdateCategoryRequest) (*domain.CategoryResponse, error) {
+	cat, err := s.categoryRepo.FindByIDAndUserID(ctx, categoryID, userID)
+	if err != nil {
+		return nil, err
+	}
+	cat.Name = req.Name
+	cat.Icon = req.Icon
+	cat.Color = req.Color
+	cat.Type = req.Type
+	if err := s.categoryRepo.Update(ctx, cat); err != nil {
+		return nil, fmt.Errorf("update category: %w", err)
+	}
+	resp := cat.ToResponse()
+	return &resp, nil
+}
+
+func (s *CategoryService) Delete(ctx context.Context, userID, categoryID string) error {
+	if _, err := s.categoryRepo.FindByIDAndUserID(ctx, categoryID, userID); err != nil {
+		return err
+	}
+	return s.categoryRepo.Delete(ctx, categoryID, userID)
+}
+
 func (s *CategoryService) ListByType(ctx context.Context, userID, typeFilter string) ([]domain.CategoryResponse, error) {
 	cats, err := s.categoryRepo.FindByUserID(ctx, userID, typeFilter)
 	if err != nil {

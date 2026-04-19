@@ -31,12 +31,27 @@ type CreateCategoryRequest struct {
 	Type  string `json:"type"`
 }
 
+type UpdateCategoryRequest struct {
+	Name  string `json:"name"`
+	Icon  string `json:"icon"`
+	Color string `json:"color"`
+	Type  string `json:"type"`
+}
+
 type CreateTransactionRequest struct {
 	CategoryID string `json:"category_id"`
 	Amount     int64  `json:"amount"`
 	Type       string `json:"type"`
 	Note       string `json:"note"`
 	Date       string `json:"date"` // RFC3339 or "2006-01-02"
+}
+
+type UpdateTransactionRequest struct {
+	CategoryID string `json:"category_id"`
+	Amount     int64  `json:"amount"`
+	Type       string `json:"type"`
+	Note       string `json:"note"`
+	Date       string `json:"date"`
 }
 
 type ListTransactionsFilter struct {

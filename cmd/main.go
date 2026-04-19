@@ -137,8 +137,12 @@ func main() {
 
 	protected.GET("/categories", categoryHandler.List)
 	protected.POST("/categories", categoryHandler.Create)
+	protected.PUT("/categories/:id", categoryHandler.Update)
+	protected.DELETE("/categories/:id", categoryHandler.Delete)
 	protected.GET("/transactions", transactionHandler.List)
 	protected.POST("/transactions", transactionHandler.Create)
+	protected.PUT("/transactions/:id", transactionHandler.Update)
+	protected.DELETE("/transactions/:id", transactionHandler.Delete)
 
 	v1.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})

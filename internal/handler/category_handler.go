@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"errors"
+
 	"github.com/antonidev/dompet-santuy/internal/domain"
 	"github.com/antonidev/dompet-santuy/internal/middleware"
+	"github.com/antonidev/dompet-santuy/internal/repository"
 	"github.com/antonidev/dompet-santuy/internal/response"
 	"github.com/antonidev/dompet-santuy/internal/service"
 	"github.com/labstack/echo/v4"
@@ -44,4 +47,44 @@ func (h *CategoryHandler) List(c echo.Context) error {
 	}
 
 	return response.List(c, "categories retrieved", cats)
+}
+
+func (h *CategoryHandler) Update(c echo.Context) error {
+	categoryID := c.Param("id")
+	var req domain.UpdateCategoryRequest
+	if err := c.Bind(&req); err != nil {
+		return response.BadRequest(c, "invalid request body")
+	}
+	if err := c.Validate(&req); err != nil {
+		return err
+	}
+
+	userID := c.Get(middleware.UserIDKey).(string)
+	cat, err := h.categorySvc.Update(c.Request().Context(), userID, categoryID, &req)
+	if errors.Is(err, repository.ErrNotFound) {
+		return response.NotFound(c, "category not found")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "failed to update category")
+	}
+
+	return response.OK(c, "category updated", cat)
+}
+
+func (h *CategoryHandler) Delete(c echo.Context) error {
+	categoryID := c.Param("id")
+	userID := c.Get(middleware.UserIDKey).(string)
+
+	err := h.categorySvc.Delete(c.Request().Context(), userID, categoryID)
+	if errors.Is(err, repository.ErrNotFound) {
+		return response.NotFound(c, "category not found")
+	}
+	if errors.Is(err, repository.ErrCategoryInUse) {
+		return response.Conflict(c, "category has linked transactions and cannot be deleted")
+	}
+	if err != nil {
+		return response.InternalServerError(c, "failed to delete category")
+	}
+
+	return response.NoContent(c, "category deleted")
 }
