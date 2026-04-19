@@ -45,6 +45,30 @@ func (v *Validator) Validate(i interface{}) error {
 		if strings.TrimSpace(req.RefreshToken) == "" {
 			errs = append(errs, "refresh_token is required")
 		}
+
+	case *domain.CreateCategoryRequest:
+		if strings.TrimSpace(req.Name) == "" {
+			errs = append(errs, "name is required")
+		} else if len(req.Name) > 100 {
+			errs = append(errs, "name must be at most 100 characters")
+		}
+		if req.Type != "income" && req.Type != "expense" {
+			errs = append(errs, "type must be income or expense")
+		}
+
+	case *domain.CreateTransactionRequest:
+		if strings.TrimSpace(req.CategoryID) == "" {
+			errs = append(errs, "category_id is required")
+		}
+		if req.Amount <= 0 {
+			errs = append(errs, "amount must be greater than 0")
+		}
+		if req.Type != "income" && req.Type != "expense" {
+			errs = append(errs, "type must be income or expense")
+		}
+		if strings.TrimSpace(req.Date) == "" {
+			errs = append(errs, "date is required")
+		}
 	}
 
 	if len(errs) > 0 {

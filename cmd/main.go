@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/antonidev/dompet-santuy/internal/handler"
 	appmw "github.com/antonidev/dompet-santuy/internal/middleware"
 	"github.com/antonidev/dompet-santuy/internal/repository"
+	"github.com/antonidev/dompet-santuy/internal/response"
 	"github.com/antonidev/dompet-santuy/internal/service"
 	"github.com/antonidev/dompet-santuy/internal/util"
 
@@ -43,8 +45,16 @@ func main() {
 
 	userRepo := repository.NewUserRepository(db)
 	tokenRepo := repository.NewRefreshTokenRepository(db)
+	categoryRepo := repository.NewCategoryRepository(db)
+	transactionRepo := repository.NewTransactionRepository(db)
+
 	authSvc := service.NewAuthService(userRepo, tokenRepo, jwtManager)
+	categorySvc := service.NewCategoryService(categoryRepo)
+	transactionSvc := service.NewTransactionService(transactionRepo, categoryRepo)
+
 	authHandler := handler.NewAuthHandler(authSvc)
+	categoryHandler := handler.NewCategoryHandler(categorySvc)
+	transactionHandler := handler.NewTransactionHandler(transactionSvc)
 
 	// Cleanup expired tokens every hour
 	go func() {
@@ -60,6 +70,39 @@ func main() {
 	e := echo.New()
 	e.HideBanner = true
 	e.Validator = util.NewValidator()
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		if c.Response().Committed {
+			return
+		}
+
+		code := http.StatusInternalServerError
+		message := "internal server error"
+		var validationErrors []string
+
+		var he *echo.HTTPError
+		if errors.As(err, &he) {
+			code = he.Code
+			switch v := he.Message.(type) {
+			case map[string]any:
+				if msg, ok := v["message"].(string); ok {
+					message = msg
+				}
+				if errs, ok := v["errors"].([]string); ok {
+					validationErrors = errs
+				}
+			case string:
+				message = v
+			default:
+				message = fmt.Sprintf("%v", v)
+			}
+		}
+
+		c.JSON(code, response.Response[any]{ //nolint:errcheck
+			Success: false,
+			Message: message,
+			Errors:  validationErrors,
+		})
+	}
 
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
@@ -91,6 +134,11 @@ func main() {
 	protected.Use(appmw.JWTAuth(jwtManager))
 	protected.GET("/me", authHandler.Me)
 	protected.POST("/auth/logout-all", authHandler.LogoutAll)
+
+	protected.GET("/categories", categoryHandler.List)
+	protected.POST("/categories", categoryHandler.Create)
+	protected.GET("/transactions", transactionHandler.List)
+	protected.POST("/transactions", transactionHandler.Create)
 
 	v1.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})

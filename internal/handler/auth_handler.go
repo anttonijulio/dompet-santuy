@@ -2,7 +2,6 @@ package handler
 
 import (
 	"errors"
-	"net/http"
 	"strings"
 
 	"github.com/antonidev/dompet-santuy/internal/domain"
@@ -24,7 +23,7 @@ func NewAuthHandler(authService *service.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c echo.Context) error {
 	var req domain.RegisterRequest
 	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+		return response.BadRequest(c, "invalid request body")
 	}
 	if err := c.Validate(&req); err != nil {
 		return err
@@ -35,10 +34,10 @@ func (h *AuthHandler) Register(c echo.Context) error {
 
 	user, err := h.authService.Register(c.Request().Context(), &req)
 	if errors.Is(err, repository.ErrDuplicateEmail) {
-		return echo.NewHTTPError(http.StatusConflict, "email already registered")
+		return response.Conflict(c, "email already registered")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "registration failed")
+		return response.InternalServerError(c, "registration failed")
 	}
 
 	return response.Created(c, "registration successful", user)
@@ -47,7 +46,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 func (h *AuthHandler) Login(c echo.Context) error {
 	var req domain.LoginRequest
 	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+		return response.BadRequest(c, "invalid request body")
 	}
 	if err := c.Validate(&req); err != nil {
 		return err
@@ -57,10 +56,10 @@ func (h *AuthHandler) Login(c echo.Context) error {
 
 	tokens, err := h.authService.Login(c.Request().Context(), &req)
 	if errors.Is(err, service.ErrInvalidCredentials) {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid email or password")
+		return response.Unauthorized(c, "invalid email or password")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "login failed")
+		return response.InternalServerError(c, "login failed")
 	}
 
 	return response.OK(c, "login successful", tokens)
@@ -69,7 +68,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 func (h *AuthHandler) Refresh(c echo.Context) error {
 	var req domain.RefreshRequest
 	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+		return response.BadRequest(c, "invalid request body")
 	}
 	if err := c.Validate(&req); err != nil {
 		return err
@@ -77,10 +76,10 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 
 	tokens, err := h.authService.Refresh(c.Request().Context(), req.RefreshToken)
 	if errors.Is(err, service.ErrInvalidToken) || errors.Is(err, service.ErrTokenRevoked) {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		return response.Unauthorized(c, err.Error())
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "token refresh failed")
+		return response.InternalServerError(c, "token refresh failed")
 	}
 
 	return response.OK(c, "token refreshed", tokens)
@@ -89,7 +88,7 @@ func (h *AuthHandler) Refresh(c echo.Context) error {
 func (h *AuthHandler) Logout(c echo.Context) error {
 	var req domain.RefreshRequest
 	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+		return response.BadRequest(c, "invalid request body")
 	}
 	if err := c.Validate(&req); err != nil {
 		return err
@@ -111,10 +110,10 @@ func (h *AuthHandler) Me(c echo.Context) error {
 
 	user, err := h.authService.GetProfile(c.Request().Context(), userID)
 	if errors.Is(err, repository.ErrNotFound) {
-		return echo.NewHTTPError(http.StatusNotFound, "user not found")
+		return response.NotFound(c, "user not found")
 	}
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to get profile")
+		return response.InternalServerError(c, "failed to get profile")
 	}
 
 	return response.OK(c, "profile retrieved", user)

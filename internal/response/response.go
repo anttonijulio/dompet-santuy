@@ -14,10 +14,11 @@ type Meta struct {
 }
 
 type Response[T any] struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Data    T      `json:"data,omitempty"`
-	Meta    *Meta  `json:"meta,omitempty"`
+	Success bool     `json:"success"`
+	Message string   `json:"message"`
+	Data    T        `json:"data,omitempty"`
+	Errors  []string `json:"errors,omitempty"`
+	Meta    *Meta    `json:"meta,omitempty"`
 }
 
 func OK[T any](c echo.Context, message string, data T) error {
@@ -43,6 +44,34 @@ func Paginated[T any](c echo.Context, message string, data []T, meta Meta) error
 		Data:    data,
 		Meta:    &meta,
 	})
+}
+
+func BadRequest(c echo.Context, message string) error {
+	return c.JSON(http.StatusBadRequest, Response[any]{Success: false, Message: message})
+}
+
+func Unauthorized(c echo.Context, message string) error {
+	return c.JSON(http.StatusUnauthorized, Response[any]{Success: false, Message: message})
+}
+
+func Forbidden(c echo.Context, message string) error {
+	return c.JSON(http.StatusForbidden, Response[any]{Success: false, Message: message})
+}
+
+func NotFound(c echo.Context, message string) error {
+	return c.JSON(http.StatusNotFound, Response[any]{Success: false, Message: message})
+}
+
+func Conflict(c echo.Context, message string) error {
+	return c.JSON(http.StatusConflict, Response[any]{Success: false, Message: message})
+}
+
+func UnprocessableEntity(c echo.Context, message string) error {
+	return c.JSON(http.StatusUnprocessableEntity, Response[any]{Success: false, Message: message})
+}
+
+func InternalServerError(c echo.Context, message string) error {
+	return c.JSON(http.StatusInternalServerError, Response[any]{Success: false, Message: message})
 }
 
 func NoContent(c echo.Context, message string) error {
