@@ -5,10 +5,34 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/antonidev/dompet-santuy/internal/domain"
 	"github.com/labstack/echo/v4"
 )
+
+var txDateFormats = []string{time.RFC3339, "2006-01-02T15:04:05", "2006-01-02"}
+
+func validateTransactionDate(s string) (ok bool, errMsg string) {
+	if strings.TrimSpace(s) == "" {
+		return false, "date is required"
+	}
+	var t time.Time
+	for _, f := range txDateFormats {
+		if parsed, err := time.Parse(f, s); err == nil {
+			t = parsed.UTC()
+			break
+		}
+	}
+	if t.IsZero() {
+		return false, "date is invalid (expected YYYY-MM-DD)"
+	}
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	if t.Truncate(24 * time.Hour).After(today) {
+		return false, "date must not be in the future"
+	}
+	return true, ""
+}
 
 var emailRe = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
@@ -76,8 +100,8 @@ func (v *Validator) Validate(i interface{}) error {
 		if req.Type != "income" && req.Type != "expense" {
 			errs = append(errs, "type must be income or expense")
 		}
-		if strings.TrimSpace(req.Date) == "" {
-			errs = append(errs, "date is required")
+		if ok, msg := validateTransactionDate(req.Date); !ok {
+			errs = append(errs, msg)
 		}
 
 	case *domain.UpdateTransactionRequest:
@@ -90,8 +114,8 @@ func (v *Validator) Validate(i interface{}) error {
 		if req.Type != "income" && req.Type != "expense" {
 			errs = append(errs, "type must be income or expense")
 		}
-		if strings.TrimSpace(req.Date) == "" {
-			errs = append(errs, "date is required")
+		if ok, msg := validateTransactionDate(req.Date); !ok {
+			errs = append(errs, msg)
 		}
 	}
 
