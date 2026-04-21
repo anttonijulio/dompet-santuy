@@ -55,11 +55,13 @@ type UpdateTransactionRequest struct {
 }
 
 type ListTransactionsFilter struct {
-	StartDate string
-	EndDate   string
-	Type      string
-	Limit     int
-	Offset    int
+	StartDate    string
+	EndDate      string
+	Type         string // "income" | "expense"
+	CategoryID   string
+	CategoryType string
+	Limit        int
+	Offset       int
 }
 
 type SummaryFilter struct {

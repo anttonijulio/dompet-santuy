@@ -176,10 +176,25 @@ Every response follows a consistent envelope:
 | Param | Type | Description |
 |-------|------|-------------|
 | `type` | string | Filter by `income` or `expense` |
+| `category_id` | string (UUID) | Filter by a specific category |
+| `category_type` | string | Filter by category type (`income` or `expense`) |
 | `start_date` | string | Start date (`YYYY-MM-DD`) |
 | `end_date` | string | End date (`YYYY-MM-DD`) |
 | `limit` | int | Page size (default: 20, max: 100) |
 | `offset` | int | Offset (default: 0) |
+
+All params are optional and composable:
+
+```
+GET /transactions
+GET /transactions?type=expense
+GET /transactions?category_id=<uuid>
+GET /transactions?category_type=expense
+GET /transactions?type=expense&category_id=<uuid>
+GET /transactions?type=income&category_type=income
+```
+
+> `category_id` and `category_type` are mutually exclusive — using both returns `400 Bad Request`.
 
 **Request body (create / update)**
 ```json

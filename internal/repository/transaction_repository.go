@@ -44,9 +44,17 @@ func (r *TransactionRepository) FindByUserID(ctx context.Context, userID string,
 		where += ` AND t.type = ?`
 		args = append(args, f.Type)
 	}
+	if f.CategoryID != "" {
+		where += ` AND t.category_id = ?`
+		args = append(args, f.CategoryID)
+	}
+	if f.CategoryType != "" {
+		where += ` AND c.type = ?`
+		args = append(args, f.CategoryType)
+	}
 
 	var total int
-	countQuery := `SELECT COUNT(*) FROM transactions t WHERE ` + where
+	countQuery := `SELECT COUNT(*) FROM transactions t JOIN categories c ON t.category_id = c.id WHERE ` + where
 	if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("count transactions: %w", err)
 	}
