@@ -12,6 +12,7 @@ import (
 
 var ErrCategoryNotOwned = errors.New("category not found or does not belong to user")
 var ErrCategoryTypeMismatch = errors.New("category type does not match transaction type")
+var ErrConflictingCategoryFilters = errors.New("category_id and category_type cannot be used together")
 
 var dateFormats = []string{time.RFC3339, "2006-01-02T15:04:05", "2006-01-02"}
 
@@ -124,6 +125,9 @@ func (s *TransactionService) GetSummary(ctx context.Context, userID string, f do
 }
 
 func (s *TransactionService) List(ctx context.Context, userID string, f domain.ListTransactionsFilter) ([]domain.TransactionResponse, int, error) {
+	if f.CategoryID != "" && f.CategoryType != "" {
+		return nil, 0, ErrConflictingCategoryFilters
+	}
 	txs, total, err := s.transactionRepo.FindByUserID(ctx, userID, f)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list transactions: %w", err)

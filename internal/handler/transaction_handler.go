@@ -123,15 +123,31 @@ func (h *TransactionHandler) List(c echo.Context) error {
 	limit, _ := strconv.Atoi(c.QueryParam("limit"))
 	offset, _ := strconv.Atoi(c.QueryParam("offset"))
 
+	txType := c.QueryParam("type")
+	if txType != "" && txType != "income" && txType != "expense" {
+		return response.BadRequest(c, "type must be 'income' or 'expense'")
+	}
+
+	categoryID := c.QueryParam("category_id")
+	categoryType := c.QueryParam("category_type")
+	if categoryID != "" && categoryType != "" {
+		return response.BadRequest(c, "category_id and category_type cannot be used together")
+	}
+
 	filter := domain.ListTransactionsFilter{
-		StartDate: c.QueryParam("start_date"),
-		EndDate:   c.QueryParam("end_date"),
-		Type:      c.QueryParam("type"),
-		Limit:     limit,
-		Offset:    offset,
+		StartDate:    c.QueryParam("start_date"),
+		EndDate:      c.QueryParam("end_date"),
+		Type:         txType,
+		CategoryID:   categoryID,
+		CategoryType: categoryType,
+		Limit:        limit,
+		Offset:       offset,
 	}
 
 	txs, total, err := h.transactionSvc.List(c.Request().Context(), userID, filter)
+	if errors.Is(err, service.ErrConflictingCategoryFilters) {
+		return response.BadRequest(c, "category_id and category_type cannot be used together")
+	}
 	if err != nil {
 		return response.InternalServerError(c, "failed to list transactions")
 	}
